@@ -1,0 +1,159 @@
+{
+  "project_name": "Royal Readymades - CPD Dashboard",
+  "design_philosophy": {
+    "persona": "E1: The Anti-AI Designer",
+    "archetype": "Archetype 1 (Organic & Earthy) x Archetype 5 (Jewel & Luxury)",
+    "core_concept": "Royal Fintech - Trust, Heritage, and Growth",
+    "vibe": "Grounded, Professional, Wealth-focused, yet Modern",
+    "principles": [
+      "Fusion: Old Money Aesthetics + Modern SaaS Functionality",
+      "Content is King: Financial data must be legible and beautiful",
+      "Negative Space: Luxurious spacing to prevent data fatigue",
+      "Contrast: Deep Emeralds against Bone White for authority"
+    ]
+  },
+  "typography": {
+    "font_families": {
+      "headings": "Outfit, sans-serif",
+      "body": "Inter, sans-serif",
+      "data": "JetBrains Mono, monospace"
+    },
+    "installation": "Import from Google Fonts: Outfit (300, 400, 500, 600, 700), Inter (400, 500, 600), JetBrains Mono (400, 500)",
+    "usage_rules": {
+      "h1": "text-4xl md:text-5xl font-semibold tracking-tight text-primary font-heading",
+      "h2": "text-3xl font-medium tracking-tight text-foreground font-heading",
+      "h3": "text-xl font-semibold text-foreground font-heading",
+      "body": "text-base text-muted-foreground leading-relaxed font-body",
+      "label": "text-xs font-bold uppercase tracking-widest text-muted-foreground/70 font-body",
+      "data_value": "font-mono text-sm font-medium tracking-tight"
+    }
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "name": "Royal Emerald",
+        "hex": "#064E3B",
+        "tailwind": "bg-emerald-900",
+        "usage": "Sidebar, Primary Buttons, Active States"
+      },
+      "secondary": {
+        "name": "Antique Gold",
+        "hex": "#D97706",
+        "tailwind": "bg-amber-600",
+        "usage": "Accents, Highlights, 'Royal' touches"
+      },
+      "background": {
+        "name": "Alabaster",
+        "hex": "#F8FAFC",
+        "tailwind": "bg-slate-50",
+        "usage": "App Background (Not pure white)"
+      },
+      "surface": {
+        "name": "Pure White",
+        "hex": "#FFFFFF",
+        "tailwind": "bg-white",
+        "usage": "Cards, Tables, Modals"
+      },
+      "text": {
+        "primary": "#0F172A",
+        "secondary": "#64748B",
+        "muted": "#94A3B8"
+      },
+      "status": {
+        "success": "#059669",
+        "warning": "#D97706",
+        "error": "#DC2626",
+        "info": "#2563EB"
+      }
+    },
+    "gradients": {
+      "royal_sheen": "linear-gradient(135deg, #064E3B 0%, #065F46 100%)",
+      "gold_dust": "linear-gradient(45deg, #D97706 0%, #F59E0B 100%)"
+    }
+  },
+  "layout": {
+    "grid_system": {
+      "dashboard": "Bento Grid Mode B (High Density)",
+      "specs": "grid grid-cols-1 md:grid-cols-12 gap-6 p-6 md:p-8",
+      "widgets": {
+        "summary": "col-span-12 md:col-span-3 row-span-1",
+        "main_chart": "col-span-12 md:col-span-9 row-span-2",
+        "feed": "col-span-12 md:col-span-4 row-span-2"
+      }
+    },
+    "spacing": {
+      "container_padding": "p-6 md:p-10",
+      "section_gap": "gap-8",
+      "card_padding": "p-6"
+    },
+    "sidebar": {
+      "width": "w-64",
+      "style": "Fixed, Dark Theme (Royal Emerald), Gold active indicators"
+    }
+  },
+  "components": {
+    "cards": {
+      "style": "Flat white surface, no default border. Add top border accent.",
+      "classes": "bg-white shadow-sm rounded-xl border-t-4 border-t-emerald-900/10 hover:border-t-amber-600 transition-colors duration-300"
+    },
+    "buttons": {
+      "primary": "bg-emerald-900 text-white hover:bg-emerald-800 rounded-lg px-6 py-2.5 font-medium shadow-lg shadow-emerald-900/20 transition-all hover:-translate-y-0.5",
+      "secondary": "bg-white text-emerald-900 border border-emerald-900/20 hover:bg-emerald-50 rounded-lg px-6 py-2.5 font-medium",
+      "ghost": "text-slate-600 hover:text-emerald-900 hover:bg-emerald-50/50"
+    },
+    "inputs": {
+      "style": "Minimalist, bottom border focus or soft ring",
+      "classes": "bg-slate-50 border-slate-200 focus:border-emerald-600 focus:ring-emerald-600/20 rounded-md"
+    },
+    "tables": {
+      "style": "Clean, spacious rows, no vertical borders",
+      "header": "bg-slate-50 text-xs uppercase tracking-wider text-slate-500 font-bold",
+      "row": "hover:bg-slate-50/80 transition-colors border-b border-slate-100"
+    },
+    "charts": {
+      "library": "Recharts (via Shadcn Charts)",
+      "palette": ["#064E3B", "#D97706", "#64748B", "#059669"]
+    }
+  },
+  "visual_enhancers": {
+    "textures": {
+      "sidebar_noise": "Use a subtle noise texture overlay on the dark sidebar to give it a 'premium paper' feel.",
+      "login_bg": "Use the 'Gold Cloth' image with a heavy dark green overlay."
+    },
+    "glassmorphism": {
+      "usage": "Toasts, Floating Action Buttons, Sticky Headers",
+      "classes": "bg-white/80 backdrop-blur-md border border-white/20 shadow-xl"
+    },
+    "motion": {
+      "page_transition": "initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}",
+      "stagger": "Stagger list items by 0.05s"
+    }
+  },
+  "images": {
+    "login_background": "https://images.unsplash.com/photo-1725677356693-cdd8b255250a?crop=entropy&cs=srgb&fm=jpg&q=85",
+    "avatars": [
+      "https://images.unsplash.com/photo-1576558656222-ba66febe3dec?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "https://images.unsplash.com/photo-1762522926157-bcc04bf0b10a?crop=entropy&cs=srgb&fm=jpg&q=85"
+    ],
+    "placeholders": {
+      "logo": "Use text 'Royal Readymades' in Playfair Display font if no logo image is available."
+    }
+  },
+  "universal_guidelines": [
+    "DO NOT use generic 'SaaS Blue' (#3B82F6). Use Emerald (#064E3B) instead.",
+    "DO NOT use 'Inter' for headings. Use 'Outfit'.",
+    "DO NOT make the dashboard dense and cluttered. Use whitespace.",
+    "ALWAYS use 'data-testid' on interactive elements.",
+    "Ensure all financial numbers are right-aligned and use tabular figures (font-mono).",
+    "Use 'sonner' for toasts.",
+    "Create a 'design_system' folder if needed, but prefer 'components/ui' customization."
+  ],
+  "instructions_to_main_agent": {
+    "step_1": "Install fonts (Outfit, JetBrains Mono) via Google Fonts import in index.css.",
+    "step_2": "Update tailwind.config.js with the Royal Emerald and Antique Gold colors.",
+    "step_3": "Create the Layout wrapper (Sidebar + Main Content area).",
+    "step_4": "Build the Dashboard using the Bento Grid strategy.",
+    "step_5": "Implement the 'Pool' visualization (Pie chart of 70:30 split).",
+    "step_6": "Ensure the 'Login' page looks premium (Dark Green + Gold + Texture)."
+  }
+}
