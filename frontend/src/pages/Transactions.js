@@ -193,14 +193,32 @@ export default function Transactions() {
           <h1 className="text-4xl font-heading font-semibold text-primary mb-2">Transactions</h1>
           <p className="text-muted-foreground">Track all CPD payments and settlements</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all flex items-center gap-2"
-          data-testid="create-transaction-button"
-        >
-          <Plus size={20} />
-          New Transaction
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={exportToExcel}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2"
+            data-testid="export-excel-button"
+          >
+            <FileSpreadsheet size={20} />
+            Export Excel
+          </button>
+          <button
+            onClick={exportToPDF}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2"
+            data-testid="export-pdf-button"
+          >
+            <FileText size={20} />
+            Export PDF
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+            data-testid="create-transaction-button"
+          >
+            <Plus size={20} />
+            New Transaction
+          </button>
+        </div>
       </div>
 
       <div className="bg-white shadow-sm rounded-xl border-t-4 border-t-primary/10 overflow-hidden">
