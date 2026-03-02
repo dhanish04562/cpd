@@ -5,7 +5,7 @@ import { Plus, X, CheckCircle, ArrowLeftRight, Download, FileText, FileSpreadshe
 import { format, differenceInDays } from 'date-fns';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
