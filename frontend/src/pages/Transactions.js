@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { toast } from 'sonner';
-import { Plus, X, CheckCircle, ArrowLeftRight } from 'lucide-react';
-import { format } from 'date-fns';
+import { Plus, X, CheckCircle, ArrowLeftRight, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { format, differenceInDays } from 'date-fns';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
