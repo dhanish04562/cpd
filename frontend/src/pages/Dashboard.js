@@ -52,6 +52,9 @@ export default function Dashboard() {
     );
   }
 
+  const { overdue, dueSoon } = getSettlementReminders();
+  const recentTransactions = transactions.slice(0, 5);
+
   const poolData = [
     { name: 'Deployed Capital', value: stats?.pool?.deployed_capital || 0, color: '#D97706' },
     { name: 'Available Funds', value: stats?.pool?.available_funds || 0, color: '#059669' },
