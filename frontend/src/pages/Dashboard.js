@@ -9,6 +9,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadData();
@@ -21,12 +22,23 @@ export default function Dashboard() {
         api.getTransactions(),
       ]);
       setStats(statsRes.data);
-      setTransactions(transactionsRes.data.slice(0, 5));
+      setTransactions(transactionsRes.data);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getSettlementReminders = () => {
+    const pending = transactions.filter(t => t.settlement_status === 'pending');
+    const overdue = pending.filter(t => differenceInDays(new Date(t.settlement_due_date), new Date()) < 0);
+    const dueSoon = pending.filter(t => {
+      const days = differenceInDays(new Date(t.settlement_due_date), new Date());
+      return days >= 0 && days <= 7;
+    });
+    
+    return { overdue, dueSoon, all: pending };
   };
 
   if (loading) {
