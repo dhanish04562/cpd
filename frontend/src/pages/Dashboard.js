@@ -112,6 +112,92 @@ export default function Dashboard() {
         <p className="text-muted-foreground">Overview of CPD Division performance</p>
       </div>
 
+      {/* Settlement Reminders */}
+      {(overdue.length > 0 || dueSoon.length > 0) && (
+        <div className="space-y-4">
+          {overdue.length > 0 && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg" data-testid="overdue-reminders">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={24} />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-red-900 mb-2">
+                    Overdue Settlements ({overdue.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {overdue.map(txn => {
+                      const daysOverdue = Math.abs(differenceInDays(new Date(txn.settlement_due_date), new Date()));
+                      return (
+                        <div key={txn.id} className="bg-white p-3 rounded-lg flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-red-900">{txn.seller_name}</p>
+                            <p className="text-sm text-red-700">
+                              Invoice: {txn.invoice_number} • Amount: ₹{txn.amount_paid.toLocaleString('en-IN')}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-red-600 font-semibold">{daysOverdue} days overdue</p>
+                            <p className="text-xs text-red-500">Due: {format(new Date(txn.settlement_due_date), 'MMM dd, yyyy')}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => navigate('/transactions')}
+                    className="mt-3 text-red-600 hover:text-red-700 font-medium text-sm"
+                  >
+                    View all transactions →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {dueSoon.length > 0 && (
+            <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg" data-testid="due-soon-reminders">
+              <div className="flex items-start gap-3">
+                <Bell className="text-orange-600 flex-shrink-0 mt-0.5" size={24} />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-orange-900 mb-2">
+                    Settlements Due Soon ({dueSoon.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {dueSoon.slice(0, 3).map(txn => {
+                      const daysLeft = differenceInDays(new Date(txn.settlement_due_date), new Date());
+                      return (
+                        <div key={txn.id} className="bg-white p-3 rounded-lg flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-orange-900">{txn.seller_name}</p>
+                            <p className="text-sm text-orange-700">
+                              Invoice: {txn.invoice_number} • Amount: ₹{txn.amount_paid.toLocaleString('en-IN')}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-orange-600 font-semibold">{daysLeft} days left</p>
+                            <p className="text-xs text-orange-500">Due: {format(new Date(txn.settlement_due_date), 'MMM dd, yyyy')}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {dueSoon.length > 3 && (
+                    <p className="mt-2 text-sm text-orange-700">
+                      + {dueSoon.length - 3} more settlements due soon
+                    </p>
+                  )}
+                  <button
+                    onClick={() => navigate('/transactions')}
+                    className="mt-3 text-orange-600 hover:text-orange-700 font-medium text-sm"
+                  >
+                    View all transactions →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((stat, index) => {
