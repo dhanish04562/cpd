@@ -302,15 +302,7 @@ export default function Transactions() {
                       <p className="text-xs text-slate-500">({txn.payment_terms_days} days)</p>
                     </td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          txn.settlement_status === 'settled'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-amber-100 text-amber-700'
-                        }`}
-                      >
-                        {txn.settlement_status}
-                      </span>
+                      {getStatusBadge(txn)}
                     </td>
                     <td className="px-6 py-4">
                       {txn.settlement_status === 'pending' && (
