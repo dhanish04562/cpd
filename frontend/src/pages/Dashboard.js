@@ -254,10 +254,10 @@ export default function Dashboard() {
         <div className="lg:col-span-7 bg-white shadow-sm rounded-xl border-t-4 border-t-primary/10 p-6">
           <h3 className="text-xl font-heading font-semibold mb-6 text-foreground">Recent Transactions</h3>
           <div className="space-y-4">
-            {transactions.length === 0 ? (
+            {recentTransactions.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">No transactions yet</p>
             ) : (
-              transactions.map((txn) => (
+              recentTransactions.map((txn) => (
                 <div
                   key={txn.id}
                   className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
