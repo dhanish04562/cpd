@@ -191,18 +191,16 @@ export default function Sellers() {
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Payment Terms (Days)
                 </label>
-                <select
+                <input
+                  type="number"
+                  min="1"
                   value={formData.payment_terms_days}
                   onChange={(e) => setFormData({ ...formData, payment_terms_days: e.target.value })}
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                  placeholder="Enter number of days (e.g., 100, 120, 180)"
                   required
-                  data-testid="seller-payment-terms-select"
-                >
-                  <option value="">Select payment terms</option>
-                  <option value="100">100 days</option>
-                  <option value="120">120 days</option>
-                  <option value="180">180 days</option>
-                </select>
+                  data-testid="seller-payment-terms-input"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
