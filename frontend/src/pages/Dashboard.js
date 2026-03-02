@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
-import { Wallet, TrendingUp, Users, Building2, Clock, DollarSign } from 'lucide-react';
+import { Wallet, TrendingUp, Users, Building2, Clock, DollarSign, AlertCircle, Bell } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
