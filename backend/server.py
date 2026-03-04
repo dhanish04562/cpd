@@ -8,9 +8,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://royalcpd.netlify.app",
-        "https://69a877e256d2d1080a8dc8b2--royalcpd.netlify.app"],
+    allow_origin_regex=r"https://.*\.netlify\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
