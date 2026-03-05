@@ -118,7 +118,7 @@ export default function Transactions() {
       txn.settlement_status
     ]);
     
-    doc.autoTable({
+    autoTable(doc, {
       startY: 28,
       head: [['Seller', 'Invoice', 'Amount', 'Discount', 'Investor Share', 'Shop Share', 'Payment Date', 'Due Date', 'Status']],
       body: tableData,
