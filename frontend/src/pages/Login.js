@@ -79,12 +79,6 @@ export default function Login({ setIsAuthenticated }) {
               {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
-
-          <div className="mt-6 p-4 bg-amber-50 border border-secondary/20 rounded-lg">
-            <p className="text-xs text-slate-600 text-center">
-              Default: <span className="font-mono font-semibold">admin / admin123</span>
-            </p>
-          </div>
         </div>
       </div>
     </div>
