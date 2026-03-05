@@ -3,6 +3,16 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"https://.*\.netlify\.app",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 import os
 import logging
 from pathlib import Path
@@ -156,7 +166,17 @@ async def create_investor(investor: InvestorCreate, username: str = Depends(veri
 
 @api_router.get("/investors", response_model=List[Investor])
 async def get_investors(username: str = Depends(verify_token)):
-    investors = await db.investors.find({}, {"_id": 0}).to_list(1000)
+    investors = await db.investors.find({"status": "active"}, {"_id": 0}).to_list(1000)
+    for inv in investors:
+        if isinstance(inv['date_joined'], str):
+            inv['date_joined'] = datetime.fromisoformat(inv['date_joined'])
+        if inv.get('date_left') and isinstance(inv['date_left'], str):
+            inv['date_left'] = datetime.fromisoformat(inv['date_left'])
+    return investors
+
+@api_router.get("/investors/inactive")
+async def get_inactive_investors(username: str = Depends(verify_token)):
+    investors = await db.investors.find({"status": "inactive"}, {"_id": 0}).to_list(1000)
     for inv in investors:
         if isinstance(inv['date_joined'], str):
             inv['date_joined'] = datetime.fromisoformat(inv['date_joined'])
@@ -183,6 +203,21 @@ async def remove_investor(investor_id: str, username: str = Depends(verify_token
     )
     
     return {"message": "Investor removed successfully"}
+
+@api_router.delete("/investors/{investor_id}/permanent")
+async def delete_investor_permanent(investor_id: str, username: str = Depends(verify_token)):
+    investor = await db.investors.find_one({"id": investor_id}, {"_id": 0})
+    if not investor:
+        raise HTTPException(status_code=404, detail="Investor not found")
+    
+    # Only allow permanent deletion of inactive investors
+    if investor['status'] == 'active':
+        raise HTTPException(status_code=400, detail="Cannot delete active investor. Deactivate first.")
+    
+    # Delete investor permanently
+    await db.investors.delete_one({"id": investor_id})
+    
+    return {"message": "Investor permanently deleted"}
 
 # Seller endpoints
 @api_router.post("/sellers", response_model=Seller)

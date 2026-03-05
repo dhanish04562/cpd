@@ -17,8 +17,10 @@ export const api = {
 
   // Investors
   getInvestors: () => axios.get(`${API}/investors`, { headers: getAuthHeader() }),
+  getInactiveInvestors: () => axios.get(`${API}/investors/inactive`, { headers: getAuthHeader() }),
   createInvestor: (data) => axios.post(`${API}/investors`, data, { headers: getAuthHeader() }),
   removeInvestor: (id) => axios.delete(`${API}/investors/${id}`, { headers: getAuthHeader() }),
+  deleteInvestorPermanently: (id) => axios.delete(`${API}/investors/${id}/permanent`, { headers: getAuthHeader() }),
 
   // Sellers
   getSellers: () => axios.get(`${API}/sellers`, { headers: getAuthHeader() }),
