@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { toast } from 'sonner';
-import { Plus, X, CheckCircle, ArrowLeftRight } from 'lucide-react';
-import { format } from 'date-fns';
+import { Plus, X, CheckCircle, ArrowLeftRight, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { format, differenceInDays } from 'date-fns';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState([]);
@@ -62,6 +65,119 @@ export default function Transactions() {
     }
   };
 
+  const exportToExcel = () => {
+    const exportData = transactions.map(txn => ({
+      'Seller': txn.seller_name,
+      'Invoice Number': txn.invoice_number,
+      'Amount Paid (₹)': txn.amount_paid,
+      'Discount Received (₹)': txn.discount_received,
+      'Investor Share (₹)': txn.investor_share,
+      'Shop Share (₹)': txn.shop_share,
+      'Payment Date': format(new Date(txn.payment_date), 'MMM dd, yyyy'),
+      'Due Date': format(new Date(txn.settlement_due_date), 'MMM dd, yyyy'),
+      'Payment Terms': `${txn.payment_terms_days} days`,
+      'Status': txn.settlement_status,
+      'Settlement Date': txn.settlement_date ? format(new Date(txn.settlement_date), 'MMM dd, yyyy') : '-',
+      'Notes': txn.notes || '-'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+    
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, 
+      { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, 
+      { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 30 }
+    ];
+    
+    XLSX.writeFile(wb, `CPD_Transactions_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    toast.success('Excel file downloaded successfully');
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF('landscape');
+    
+    // Add title
+    doc.setFontSize(18);
+    doc.text('Royal Readymades - CPD Transaction History', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${format(new Date(), 'MMM dd, yyyy')}`, 14, 22);
+    
+    // Prepare table data
+    const tableData = transactions.map(txn => [
+      txn.seller_name,
+      txn.invoice_number,
+      `₹${txn.amount_paid.toLocaleString('en-IN')}`,
+      `₹${txn.discount_received.toLocaleString('en-IN')}`,
+      `₹${txn.investor_share.toLocaleString('en-IN')}`,
+      `₹${txn.shop_share.toLocaleString('en-IN')}`,
+      format(new Date(txn.payment_date), 'MMM dd, yyyy'),
+      format(new Date(txn.settlement_due_date), 'MMM dd, yyyy'),
+      txn.settlement_status
+    ]);
+    
+    autoTable(doc, {
+      startY: 28,
+      head: [['Seller', 'Invoice', 'Amount', 'Discount', 'Investor Share', 'Shop Share', 'Payment Date', 'Due Date', 'Status']],
+      body: tableData,
+      theme: 'grid',
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [6, 78, 59], textColor: 255 },
+      columnStyles: {
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right' },
+        5: { halign: 'right' }
+      }
+    });
+    
+    doc.save(`CPD_Transactions_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    toast.success('PDF file downloaded successfully');
+  };
+
+  const getDaysUntilDue = (dueDate) => {
+    return differenceInDays(new Date(dueDate), new Date());
+  };
+
+  const getStatusBadge = (txn) => {
+    if (txn.settlement_status === 'settled') {
+      return <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">settled</span>;
+    }
+    
+    const daysUntilDue = getDaysUntilDue(txn.settlement_due_date);
+    
+    if (daysUntilDue < 0) {
+      return (
+        <div className="flex flex-col gap-1">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+            overdue
+          </span>
+          <span className="text-xs text-red-600">{Math.abs(daysUntilDue)} days overdue</span>
+        </div>
+      );
+    } else if (daysUntilDue <= 7) {
+      return (
+        <div className="flex flex-col gap-1">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
+            due soon
+          </span>
+          <span className="text-xs text-orange-600">{daysUntilDue} days left</span>
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex flex-col gap-1">
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+            pending
+          </span>
+          <span className="text-xs text-muted-foreground">{daysUntilDue} days left</span>
+        </div>
+      );
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -77,14 +193,32 @@ export default function Transactions() {
           <h1 className="text-4xl font-heading font-semibold text-primary mb-2">Transactions</h1>
           <p className="text-muted-foreground">Track all CPD payments and settlements</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all flex items-center gap-2"
-          data-testid="create-transaction-button"
-        >
-          <Plus size={20} />
-          New Transaction
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={exportToExcel}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2"
+            data-testid="export-excel-button"
+          >
+            <FileSpreadsheet size={20} />
+            Export Excel
+          </button>
+          <button
+            onClick={exportToPDF}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-lg font-medium shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2"
+            data-testid="export-pdf-button"
+          >
+            <FileText size={20} />
+            Export PDF
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+            data-testid="create-transaction-button"
+          >
+            <Plus size={20} />
+            New Transaction
+          </button>
+        </div>
       </div>
 
       <div className="bg-white shadow-sm rounded-xl border-t-4 border-t-primary/10 overflow-hidden">
@@ -168,15 +302,7 @@ export default function Transactions() {
                       <p className="text-xs text-slate-500">({txn.payment_terms_days} days)</p>
                     </td>
                     <td className="px-6 py-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          txn.settlement_status === 'settled'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-amber-100 text-amber-700'
-                        }`}
-                      >
-                        {txn.settlement_status}
-                      </span>
+                      {getStatusBadge(txn)}
                     </td>
                     <td className="px-6 py-4">
                       {txn.settlement_status === 'pending' && (
