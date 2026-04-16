@@ -148,8 +148,16 @@ export default function AuditLog() {
   const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
-    loadLogs();
-  }, [filter]);
+  const loadLogs = async () => {
+    // your API call here
+    // example:
+    // const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/logs?filter=${filter}`);
+    // const data = await res.json();
+    // setLogs(data);
+  };
+
+  loadLogs();
+}, [filter]);
 
   const loadLogs = async () => {
     try {
