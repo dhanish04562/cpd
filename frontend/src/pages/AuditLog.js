@@ -213,7 +213,7 @@ useEffect(() => {
         {filters.map((f) => (
           <button
             key={f.value}
-            onClick={() => { setLoading(true); setFilter(f.value); }}
+            onClick={() =>  setFilter(f.value) }
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               filter === f.value
                 ? 'bg-primary text-white shadow-md shadow-primary/20'
