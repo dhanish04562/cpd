@@ -147,6 +147,10 @@ export default function AuditLog() {
   const [filter, setFilter] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
 
+  const filteredLogs = logs.filter((log) => {
+  if (filter === "all") return true;
+  return log.event_type === filter;
+});
  
 useEffect(() => {
   const loadLogs = async () => {
@@ -178,20 +182,7 @@ useEffect(() => {
   };
 
   loadLogs();
-}, [filter]);
-
-  const loadLogs = async () => {
-    try {
-      const params = {};
-      if (filter !== 'all') params.event_type = filter;
-      const response = await api.getAuditLogs(params);
-      setLogs(response.data);
-    } catch (error) {
-      toast.error('Failed to load audit logs');
-    } finally {
-      setLoading(false);
-    }
-  };
+}, []);
 
   const filters = [
     { value: 'all', label: 'All Events' },
@@ -258,14 +249,14 @@ useEffect(() => {
             <p className="text-muted-foreground">No audit logs yet. Activities will appear here as they happen.</p>
           </div>
         ) : (
-          logs.map((log) => (
-            <AuditLogCard
-              key={log.id}
-              log={log}
-              isExpanded={expandedId === log.id}
-              onToggle={() => setExpandedId(expandedId === log.id ? null : log.id)}
-            />
-          ))
+          filteredLogs.map((log) => (
+  <AuditLogCard
+    key={log.id}
+    log={log}
+    isExpanded={expandedId === log.id}
+    onToggle={() => setExpandedId(expandedId === log.id ? null : log.id)}
+  />
+))
         )}
       </div>
     </div>
