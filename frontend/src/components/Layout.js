@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Building2, ArrowLeftRight, FileText, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Building2, ArrowLeftRight, FileText, LogOut, ScrollText } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Layout() {
@@ -12,6 +12,7 @@ export default function Layout() {
     { name: 'Sellers', icon: Building2, path: '/sellers' },
     { name: 'Transactions', icon: ArrowLeftRight, path: '/transactions' },
     { name: 'Reports', icon: FileText, path: '/reports' },
+    { name: 'Audit Log', icon: ScrollText, path: '/audit-log' },
   ];
 
   const handleLogout = () => {

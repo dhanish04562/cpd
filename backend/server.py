@@ -102,6 +102,18 @@ class Transaction(BaseModel):
 class SettlementUpdate(BaseModel):
     transaction_id: str
 
+class AuditLog(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    event_type: str  # investor_joined, investor_exited, transaction_created, transaction_settled, pool_updated
+    entity_type: str  # investor, transaction, pool
+    entity_id: Optional[str] = None
+    entity_name: Optional[str] = None
+    description: str
+    details: dict = Field(default_factory=dict)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    performed_by: str = "admin"
+
 # Helper functions
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -109,6 +121,23 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+async def create_audit_log(event_type: str, entity_type: str, description: str,
+                          entity_id: str = None, entity_name: str = None,
+                          details: dict = None, performed_by: str = "admin"):
+    log = AuditLog(
+        event_type=event_type,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        entity_name=entity_name,
+        description=description,
+        details=details or {},
+        performed_by=performed_by
+    )
+    doc = log.model_dump()
+    doc['timestamp'] = doc['timestamp'].isoformat()
+    await db.audit_logs.insert_one(doc)
+    return log
 
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
@@ -152,6 +181,24 @@ async def create_investor(investor: InvestorCreate, username: str = Depends(veri
             "available_funds": investor.contribution_amount
         })
     
+    # Get updated pool for audit log
+    updated_pool = await db.pool.find_one({}, {"_id": 0})
+    await create_audit_log(
+        event_type="investor_joined",
+        entity_type="investor",
+        entity_id=investor_obj.id,
+        entity_name=investor_obj.name,
+        description=f"Investor '{investor_obj.name}' joined the pool with a contribution of ₹{investor.contribution_amount:,.2f}",
+        details={
+            "contribution_amount": investor.contribution_amount,
+            "investor_email": investor.email,
+            "investor_phone": investor.phone,
+            "pool_total_after": updated_pool.get("total_amount", 0) if updated_pool else investor.contribution_amount,
+            "pool_available_after": updated_pool.get("available_funds", 0) if updated_pool else investor.contribution_amount,
+        },
+        performed_by=username
+    )
+    
     return investor_obj
 
 @api_router.get("/investors", response_model=List[Investor])
@@ -180,6 +227,27 @@ async def remove_investor(investor_id: str, username: str = Depends(verify_token
     await db.pool.update_one(
         {},
         {"$inc": {"total_amount": -investor['contribution_amount'], "available_funds": -investor['contribution_amount']}}
+    )
+    
+    # Get updated pool for audit log
+    updated_pool = await db.pool.find_one({}, {"_id": 0})
+    await create_audit_log(
+        event_type="investor_exited",
+        entity_type="investor",
+        entity_id=investor_id,
+        entity_name=investor.get("name", "Unknown"),
+        description=f"Investor '{investor.get('name', 'Unknown')}' exited the pool. Contribution of ₹{investor['contribution_amount']:,.2f} withdrawn.",
+        details={
+            "contribution_amount": investor['contribution_amount'],
+            "total_returns_earned": investor.get("total_returns", 0),
+            "investor_email": investor.get("email", ""),
+            "investor_phone": investor.get("phone", ""),
+            "date_joined": investor.get("date_joined", ""),
+            "date_exited": datetime.now(timezone.utc).isoformat(),
+            "pool_total_after": updated_pool.get("total_amount", 0) if updated_pool else 0,
+            "pool_available_after": updated_pool.get("available_funds", 0) if updated_pool else 0,
+        },
+        performed_by=username
     )
     
     return {"message": "Investor removed successfully"}
@@ -257,6 +325,29 @@ async def create_transaction(transaction: TransactionCreate, username: str = Dep
         {"$inc": {"deployed_capital": transaction.amount_paid, "available_funds": -transaction.amount_paid}}
     )
     
+    # Audit log for transaction creation
+    updated_pool = await db.pool.find_one({}, {"_id": 0})
+    await create_audit_log(
+        event_type="transaction_created",
+        entity_type="transaction",
+        entity_id=transaction_obj.id,
+        entity_name=seller['name'],
+        description=f"New transaction of ₹{transaction.amount_paid:,.2f} with seller '{seller['name']}'. Discount: ₹{discount_received:,.2f} (Investor: ₹{investor_share:,.2f} | Shop: ₹{shop_share:,.2f})",
+        details={
+            "seller_name": seller['name'],
+            "amount_paid": transaction.amount_paid,
+            "discount_received": discount_received,
+            "investor_share": investor_share,
+            "shop_share": shop_share,
+            "invoice_number": transaction.invoice_number,
+            "payment_terms_days": seller['payment_terms_days'],
+            "settlement_due_date": settlement_due_date.isoformat(),
+            "pool_deployed_after": updated_pool.get("deployed_capital", 0) if updated_pool else 0,
+            "pool_available_after": updated_pool.get("available_funds", 0) if updated_pool else 0,
+        },
+        performed_by=username
+    )
+    
     return transaction_obj
 
 @api_router.get("/transactions", response_model=List[Transaction])
@@ -306,7 +397,72 @@ async def settle_transaction(settlement: SettlementUpdate, username: str = Depen
                 {"$inc": {"total_returns": investor_return}}
             )
     
+    # Audit log for settlement
+    updated_pool = await db.pool.find_one({}, {"_id": 0})
+    distribution_details = []
+    if total_contribution > 0:
+        for inv in investors:
+            proportion = inv['contribution_amount'] / total_contribution
+            investor_return = transaction['investor_share'] * proportion
+            distribution_details.append({
+                "investor_name": inv.get('name', 'Unknown'),
+                "investor_id": inv['id'],
+                "proportion": round(proportion * 100, 2),
+                "return_amount": round(investor_return, 2)
+            })
+    
+    await create_audit_log(
+        event_type="transaction_settled",
+        entity_type="transaction",
+        entity_id=settlement.transaction_id,
+        entity_name=transaction.get('seller_name', 'Unknown'),
+        description=f"Transaction with '{transaction.get('seller_name', 'Unknown')}' settled. ₹{amount_returned:,.2f} returned to pool (₹{transaction['amount_paid']:,.2f} principal + ₹{transaction['investor_share']:,.2f} investor returns).",
+        details={
+            "seller_name": transaction.get('seller_name', 'Unknown'),
+            "amount_paid": transaction['amount_paid'],
+            "amount_returned": amount_returned,
+            "investor_share": transaction['investor_share'],
+            "shop_share": transaction['shop_share'],
+            "return_distribution": distribution_details,
+            "pool_deployed_after": updated_pool.get("deployed_capital", 0) if updated_pool else 0,
+            "pool_available_after": updated_pool.get("available_funds", 0) if updated_pool else 0,
+        },
+        performed_by=username
+    )
+    
     return {"message": "Transaction settled successfully"}
+
+# Audit Log endpoints
+@api_router.get("/audit-logs")
+async def get_audit_logs(
+    event_type: Optional[str] = None,
+    entity_type: Optional[str] = None,
+    entity_id: Optional[str] = None,
+    username: str = Depends(verify_token)
+):
+    query = {}
+    if event_type:
+        query["event_type"] = event_type
+    if entity_type:
+        query["entity_type"] = entity_type
+    if entity_id:
+        query["entity_id"] = entity_id
+    
+    logs = await db.audit_logs.find(query, {"_id": 0}).sort("timestamp", -1).to_list(500)
+    for log in logs:
+        if isinstance(log.get('timestamp'), str):
+            log['timestamp'] = datetime.fromisoformat(log['timestamp'])
+    return logs
+
+@api_router.get("/audit-logs/investor/{investor_id}")
+async def get_investor_audit_logs(investor_id: str, username: str = Depends(verify_token)):
+    logs = await db.audit_logs.find(
+        {"entity_id": investor_id}, {"_id": 0}
+    ).sort("timestamp", -1).to_list(500)
+    for log in logs:
+        if isinstance(log.get('timestamp'), str):
+            log['timestamp'] = datetime.fromisoformat(log['timestamp'])
+    return logs
 
 # Dashboard endpoints
 @api_router.get("/dashboard/stats")
