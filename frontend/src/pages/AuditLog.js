@@ -147,13 +147,36 @@ export default function AuditLog() {
   const [filter, setFilter] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
 
-  useEffect(() => {
+  const [logs, setLogs] = useState([]);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
   const loadLogs = async () => {
-    // your API call here
-    // example:
-    // const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/logs?filter=${filter}`);
-    // const data = await res.json();
-    // setLogs(data);
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL}/api/audit-logs`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch logs");
+      }
+
+      const data = await res.json();
+      setLogs(data);
+    } catch (err) {
+      console.error("Error fetching logs:", err);
+      setLogs([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   loadLogs();
