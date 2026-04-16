@@ -34,4 +34,8 @@ export const api = {
 
   // Reports
   getInvestorReturns: () => axios.get(`${API}/reports/investor-returns`, { headers: getAuthHeader() }),
+
+  // Audit Logs
+  getAuditLogs: (params = {}) => axios.get(`${API}/audit-logs`, { headers: getAuthHeader(), params }),
+  getInvestorAuditLogs: (investorId) => axios.get(`${API}/audit-logs/investor/${investorId}`, { headers: getAuthHeader() }),
 };
