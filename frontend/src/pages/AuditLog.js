@@ -147,9 +147,7 @@ export default function AuditLog() {
   const [filter, setFilter] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
 
-  const [logs, setLogs] = useState([]);
-const [loading, setLoading] = useState(true);
-
+ 
 useEffect(() => {
   const loadLogs = async () => {
     try {
