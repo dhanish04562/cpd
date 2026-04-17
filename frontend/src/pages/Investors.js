@@ -10,7 +10,6 @@ export default function Investors() {
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
     phone: '',
     contribution_amount: '',
   });
@@ -34,12 +33,13 @@ export default function Investors() {
     e.preventDefault();
     try {
       await api.createInvestor({
-        ...formData,
+        name: formData.name,
+        phone: formData.phone,
         contribution_amount: parseFloat(formData.contribution_amount),
       });
       toast.success('Investor added successfully');
       setShowModal(false);
-      setFormData({ name: '', email: '', phone: '', contribution_amount: '' });
+      setFormData({ name: '', phone: '', contribution_amount: '' });
       loadInvestors();
     } catch (error) {
       toast.error('Failed to add investor');
@@ -129,8 +129,7 @@ export default function Investors() {
                       <p className="font-semibold text-foreground">{investor.name}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-foreground">{investor.email}</p>
-                      <p className="text-xs text-muted-foreground">{investor.phone}</p>
+                      <p className="text-sm text-foreground">{investor.phone}</p>
                     </td>
                     <td className="px-6 py-4">
                       <p className="font-mono font-semibold text-foreground">
@@ -199,17 +198,6 @@ export default function Investors() {
                   className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                   required
                   data-testid="investor-name-input"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                  required
-                  data-testid="investor-email-input"
                 />
               </div>
               <div>
