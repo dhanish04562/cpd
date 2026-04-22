@@ -3,6 +3,22 @@ import axios from 'axios';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Configure axios defaults
+axios.defaults.timeout = 30000; // 30 second timeout
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+
+// Add response interceptor for better error handling
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      console.error('Request timed out:', error.config.url);
+      error.isTimeout = true;
+    }
+    return Promise.reject(error);
+  }
+);
+
 const getAuthHeader = () => {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};

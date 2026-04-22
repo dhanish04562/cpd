@@ -13,6 +13,16 @@ export default function ProfitSettlements() {
   const [processingId, setProcessingId] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
 
+  // Clear processing state on component unmount or filter change
+  useEffect(() => {
+    return () => {
+      if (processingId) {
+        console.log('Clearing processing state on unmount/filter change');
+        setProcessingId(null);
+      }
+    };
+  }, [filterStatus]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -48,12 +58,28 @@ export default function ProfitSettlements() {
     if (!window.confirm('Are you sure you want to execute this payout?')) return;
     
     setProcessingId(settlementId);
+    
+    // Set a timeout to clear processing state if API call hangs
+    const timeoutId = setTimeout(() => {
+      console.warn('Payout execution timed out, clearing processing state');
+      setProcessingId(null);
+      toast.error('Request timed out. Please try again.');
+    }, 30000); // 30 second timeout
+    
     try {
       await api.executeProfitPayout(settlementId);
+      clearTimeout(timeoutId);
       toast.success('Payout executed successfully');
       loadData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to execute payout');
+      clearTimeout(timeoutId);
+      console.error('Payout execution error:', error);
+      
+      if (error.isTimeout) {
+        toast.error('Request timed out. The backend may be unavailable. Please try again later.');
+      } else {
+        toast.error(error.response?.data?.detail || 'Failed to execute payout');
+      }
     } finally {
       setProcessingId(null);
     }
@@ -245,14 +271,29 @@ export default function ProfitSettlements() {
                     </td>
                     <td className="px-6 py-4">
                       {settlement.status === 'eligible' && (
-                        <button
-                          onClick={() => handleExecutePayout(settlement.id)}
-                          disabled={processingId === settlement.id}
-                          className="text-blue-600 hover:text-blue-700 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                          data-testid={`payout-settlement-${settlement.id}`}
-                        >
-                          {processingId === settlement.id ? 'Processing...' : 'Execute Payout'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleExecutePayout(settlement.id)}
+                            disabled={processingId === settlement.id}
+                            className="text-blue-600 hover:text-blue-700 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            data-testid={`payout-settlement-${settlement.id}`}
+                          >
+                            {processingId === settlement.id ? 'Processing...' : 'Execute Payout'}
+                          </button>
+                          {processingId === settlement.id && (
+                            <button
+                              onClick={() => {
+                                console.log('Manually clearing processing state');
+                                setProcessingId(null);
+                                toast.info('Processing cancelled');
+                              }}
+                              className="text-red-600 hover:text-red-700 text-xs underline"
+                              title="Cancel processing"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </div>
                       )}
                       {settlement.status === 'paid' && (
                         <span className="text-green-600 text-sm">
