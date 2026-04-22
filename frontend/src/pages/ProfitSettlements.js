@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import { toast } from 'sonner';
 import { Plus, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react';
@@ -13,11 +13,7 @@ export default function ProfitSettlements() {
   const [processingId, setProcessingId] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [settlementsRes, statsRes] = await Promise.all([
@@ -31,8 +27,11 @@ export default function ProfitSettlements() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus]);
 
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
   const handleCalculateSettlements = async (e) => {
     e.preventDefault();
     try {
@@ -163,10 +162,7 @@ export default function ProfitSettlements() {
         {['all', 'pending', 'eligible', 'paid'].map(status => (
           <button
             key={status}
-            onClick={() => {
-              setFilterStatus(status);
-              setSettlements([]);
-            }}
+            onClick={() => setFilterStatus(status)}
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
               filterStatus === status
                 ? 'bg-primary text-white'
