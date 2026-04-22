@@ -110,6 +110,10 @@ export default function Dashboard() {
       <div>
         <h1 className="text-4xl font-heading font-semibold text-primary mb-2">Dashboard</h1>
         <p className="text-muted-foreground">Overview of CPD Division performance</p>
+        <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <Clock size={16} />
+          <span>Current Date: {format(new Date(), 'EEEE, MMMM dd, yyyy')}</span>
+        </div>
       </div>
 
       {/* Settlement Reminders */}
