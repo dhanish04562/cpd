@@ -95,8 +95,7 @@ def test_profit_distribution():
 def test_yearly_profit_settlement_rules():
     """Test the complete yearly profit settlement rules"""
     
-    # For testing: use April 1, 2027 as current date
-    now = datetime(2027, 4, 1, 0, 0, 0, tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc)
     current_year = now.year
     
     # Rule 1: Profit should be calculated yearly per investor
@@ -128,8 +127,7 @@ def test_yearly_profit_settlement_rules():
 def test_settlement_eligibility_check():
     """Test the logic for checking settlement eligibility"""
     
-    # For testing: use April 1, 2027 as current date
-    now = datetime(2027, 4, 1, 0, 0, 0, tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc)
     
     # Test cases for different settlement dates
     test_cases = [

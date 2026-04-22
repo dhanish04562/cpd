@@ -25,8 +25,8 @@ from jose import JWTError, jwt
 
 # For testing: temporarily set current date to April 1, 2027
 def get_current_datetime():
-    # return datetime.now(timezone.utc)  # Uncomment for production
-    return datetime(2027, 4, 1, 0, 0, 0, tzinfo=timezone.utc)  # For testing settlement eligibility
+    return datetime.now(timezone.utc)  # Uncomment for production
+    # return datetime(2027, 4, 1, 0, 0, 0, tzinfo=timezone.utc)  # For testing settlement eligibility
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
