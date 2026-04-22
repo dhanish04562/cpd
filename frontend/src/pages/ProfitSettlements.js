@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../api';
 import { toast } from 'sonner';
 import { Plus, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react';
@@ -12,11 +12,17 @@ export default function ProfitSettlements() {
   const [calculateYear, setCalculateYear] = useState(2026); // For testing: calculate 2026 settlements
   const [processingId, setProcessingId] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
+  const processingIdRef = useRef(null);
+
+  // Update ref whenever processingId changes
+  useEffect(() => {
+    processingIdRef.current = processingId;
+  }, [processingId]);
 
   // Clear processing state on component unmount or filter change
   useEffect(() => {
     return () => {
-      if (processingId) {
+      if (processingIdRef.current) {
         console.log('Clearing processing state on unmount/filter change');
         setProcessingId(null);
       }
@@ -32,7 +38,7 @@ export default function ProfitSettlements() {
       ]);
       setSettlements(settlementsRes.data);
       setStats(statsRes.data);
-    } catch (error) {
+    } catch {
       toast.error('Failed to load profit settlements');
     } finally {
       setLoading(false);
@@ -49,7 +55,7 @@ export default function ProfitSettlements() {
       toast.success(response.data.message);
       setShowCalculateModal(false);
       loadData();
-    } catch (error) {
+    } catch {
       toast.error('Failed to calculate settlements');
     }
   };
@@ -327,8 +333,9 @@ export default function ProfitSettlements() {
             </div>
             <form onSubmit={handleCalculateSettlements} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Year</label>
+                <label htmlFor="calculate-year" className="block text-sm font-medium text-slate-700 mb-2">Year</label>
                 <input
+                  id="calculate-year"
                   type="number"
                   min={2020}
                   max={new Date().getFullYear()}
