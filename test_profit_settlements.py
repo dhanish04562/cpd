@@ -95,7 +95,8 @@ def test_profit_distribution():
 def test_yearly_profit_settlement_rules():
     """Test the complete yearly profit settlement rules"""
     
-    now = datetime.now(timezone.utc)
+    # For testing: use April 1, 2027 as current date
+    now = datetime(2027, 4, 1, 0, 0, 0, tzinfo=timezone.utc)
     current_year = now.year
     
     # Rule 1: Profit should be calculated yearly per investor
@@ -110,9 +111,16 @@ def test_yearly_profit_settlement_rules():
     year_end = datetime(current_year - 1, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
     payout_eligible_date = year_end + timedelta(days=90)
     
+    # Verify the 90-day delay calculation
+    expected_eligible_date = datetime(current_year, 3, 31, 23, 59, 59, tzinfo=timezone.utc)
+    assert payout_eligible_date.year == expected_eligible_date.year, f"Expected year {expected_eligible_date.year}, got {payout_eligible_date.year}"
+    assert payout_eligible_date.month == expected_eligible_date.month, f"Expected month {expected_eligible_date.month}, got {payout_eligible_date.month}"
+    assert payout_eligible_date.day == expected_eligible_date.day, f"Expected day {expected_eligible_date.day}, got {payout_eligible_date.day}"
+    
     # Settlement should only be eligible if we're past the payout_eligible_date
     is_eligible_now = now >= payout_eligible_date
     print(f"  Settlement from {current_year - 1} would be eligible now: {is_eligible_now}")
+    assert is_eligible_now == True, f"With current date {now.date()}, settlement should be eligible (past {payout_eligible_date.date()})"
     
     print("✓ Yearly profit settlement rules test passed")
 
@@ -120,7 +128,8 @@ def test_yearly_profit_settlement_rules():
 def test_settlement_eligibility_check():
     """Test the logic for checking settlement eligibility"""
     
-    now = datetime.now(timezone.utc)
+    # For testing: use April 1, 2027 as current date
+    now = datetime(2027, 4, 1, 0, 0, 0, tzinfo=timezone.utc)
     
     # Test cases for different settlement dates
     test_cases = [

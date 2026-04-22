@@ -9,7 +9,7 @@ export default function ProfitSettlements() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showCalculateModal, setShowCalculateModal] = useState(false);
-  const [calculateYear, setCalculateYear] = useState(new Date().getFullYear() - 1);
+  const [calculateYear, setCalculateYear] = useState(2026); // For testing: calculate 2026 settlements
   const [processingId, setProcessingId] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
 

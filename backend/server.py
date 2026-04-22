@@ -23,6 +23,11 @@ from datetime import datetime, timezone, timedelta
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 
+# For testing: temporarily set current date to April 1, 2027
+def get_current_datetime():
+    # return datetime.now(timezone.utc)  # Uncomment for production
+    return datetime(2027, 4, 1, 0, 0, 0, tzinfo=timezone.utc)  # For testing settlement eligibility
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -209,7 +214,7 @@ async def calculate_investor_yearly_profit(investor_id: str, year: int):
 
 async def check_and_update_settlement_eligibility():
     """Check settlements and update their eligibility status"""
-    now = datetime.now(timezone.utc)
+    now = get_current_datetime()
     
     # Update settlements that are now eligible for payout
     await db.yearly_profit_settlements.update_many(
@@ -587,7 +592,7 @@ async def calculate_yearly_settlements(year: int, username: str = Depends(verify
                 investor_name=investor['name'],
                 settlement_year=year,
                 profit_amount=profit,
-                calculation_date=datetime.now(timezone.utc),
+                calculation_date=get_current_datetime(),
                 payout_eligible_date=payout_eligible_date,
                 status="pending"
             )
@@ -638,7 +643,7 @@ async def execute_settlement_payout(settlement_id: str, username: str = Depends(
         raise HTTPException(status_code=400, detail="Settlement not yet eligible for payout (waiting for 90-day delay)")
     
     # Execute payout
-    now = datetime.now(timezone.utc)
+    now = get_current_datetime()
     await db.yearly_profit_settlements.update_one(
         {"id": settlement_id},
         {"$set": {"status": "paid", "payout_date": now.isoformat()}}
