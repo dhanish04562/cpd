@@ -6,6 +6,7 @@ import Investors from "./pages/Investors";
 import Sellers from "./pages/Sellers";
 import Transactions from "./pages/Transactions";
 import Reports from "./pages/Reports";
+import ProfitSettlements from "./pages/ProfitSettlements";
 import AuditLog from "./pages/AuditLog";
 import Layout from "./components/Layout";
 import { Toaster } from "./components/ui/sonner";
@@ -40,6 +41,7 @@ function App() {
             <Route path="sellers" element={<Sellers />} />
             <Route path="transactions" element={<Transactions />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="profit-settlements" element={<ProfitSettlements />} />
             <Route path="audit-log" element={<AuditLog />} />
           </Route>
         </Routes>

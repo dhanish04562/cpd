@@ -35,6 +35,13 @@ export const api = {
   // Reports
   getInvestorReturns: () => axios.get(`${API}/reports/investor-returns`, { headers: getAuthHeader() }),
 
+  // Yearly Profit Settlements
+  getProfitSettlements: (params = {}) => axios.get(`${API}/profit-settlements`, { headers: getAuthHeader(), params }),
+  getInvestorProfitSettlements: (investorId) => axios.get(`${API}/profit-settlements/investor/${investorId}`, { headers: getAuthHeader() }),
+  calculateYearlySettlements: (year) => axios.post(`${API}/profit-settlements/calculate?year=${year}`, {}, { headers: getAuthHeader() }),
+  executeProfitPayout: (settlementId) => axios.post(`${API}/profit-settlements/${settlementId}/payout`, {}, { headers: getAuthHeader() }),
+  getProfitSettlementStats: () => axios.get(`${API}/profit-settlements/stats`, { headers: getAuthHeader() }),
+
   // Audit Logs
   getAuditLogs: (params = {}) => axios.get(`${API}/audit-logs`, { headers: getAuthHeader(), params }),
   getInvestorAuditLogs: (investorId) => axios.get(`${API}/audit-logs/investor/${investorId}`, { headers: getAuthHeader() }),

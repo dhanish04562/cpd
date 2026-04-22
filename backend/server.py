@@ -112,6 +112,18 @@ class Transaction(BaseModel):
 class SettlementUpdate(BaseModel):
     transaction_id: str
 
+class YearlyProfitSettlement(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    investor_id: str
+    investor_name: str
+    settlement_year: int
+    profit_amount: float
+    calculation_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    payout_eligible_date: datetime
+    payout_date: Optional[datetime] = None
+    status: str = "pending"  # pending, eligible, paid
+    
 class AuditLog(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -159,6 +171,54 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
         return username
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+async def calculate_investor_yearly_profit(investor_id: str, year: int):
+    """Calculate profit for an investor for a specific year"""
+    # Get all settled transactions in the given year
+    transactions = await db.transactions.find({
+        "settlement_status": "settled"
+    }, {"_id": 0}).to_list(10000)
+    
+    # Get investor's contribution amount for proportion calculation
+    investor = await db.investors.find_one({"id": investor_id}, {"_id": 0})
+    if not investor:
+        return 0
+    
+    # Get all active investors to calculate total contribution
+    all_active_investors = await db.investors.find({"status": "active"}, {"_id": 0}).to_list(10000)
+    total_contribution = sum(inv['contribution_amount'] for inv in all_active_investors)
+    
+    if total_contribution == 0:
+        return 0
+    
+    investor_proportion = investor['contribution_amount'] / total_contribution
+    
+    # Sum up investor's share from transactions settled in that year
+    yearly_profit = 0
+    for txn in transactions:
+        if isinstance(txn['settlement_date'], str):
+            settlement_date = datetime.fromisoformat(txn['settlement_date'])
+        else:
+            settlement_date = txn['settlement_date']
+        
+        if settlement_date.year == year:
+            # Investor gets proportional share of investor_share
+            yearly_profit += txn['investor_share'] * investor_proportion
+    
+    return yearly_profit
+
+async def check_and_update_settlement_eligibility():
+    """Check settlements and update their eligibility status"""
+    now = datetime.now(timezone.utc)
+    
+    # Update settlements that are now eligible for payout
+    await db.yearly_profit_settlements.update_many(
+        {
+            "status": "pending",
+            "payout_eligible_date": {"$lte": now}
+        },
+        {"$set": {"status": "eligible"}}
+    )
 
 # Auth endpoints
 @api_router.post("/auth/login", response_model=Token)
@@ -467,6 +527,206 @@ async def settle_transaction(settlement: SettlementUpdate, username: str = Depen
     
     return {"message": "Transaction settled successfully"}
 
+# Yearly Profit Settlement endpoints
+@api_router.get("/profit-settlements", response_model=List[YearlyProfitSettlement])
+async def get_profit_settlements(
+    investor_id: Optional[str] = None,
+    year: Optional[int] = None,
+    status: Optional[str] = None,
+    username: str = Depends(verify_token)
+):
+    """Get yearly profit settlements with optional filters"""
+    # First, check and update settlement eligibility
+    await check_and_update_settlement_eligibility()
+    
+    query = {}
+    if investor_id:
+        query["investor_id"] = investor_id
+    if year:
+        query["settlement_year"] = year
+    if status:
+        query["status"] = status
+    
+    settlements = await db.yearly_profit_settlements.find(query, {"_id": 0}).sort("settlement_year", -1).to_list(1000)
+    for settlement in settlements:
+        if isinstance(settlement['calculation_date'], str):
+            settlement['calculation_date'] = datetime.fromisoformat(settlement['calculation_date'])
+        if isinstance(settlement['payout_eligible_date'], str):
+            settlement['payout_eligible_date'] = datetime.fromisoformat(settlement['payout_eligible_date'])
+        if settlement.get('payout_date') and isinstance(settlement['payout_date'], str):
+            settlement['payout_date'] = datetime.fromisoformat(settlement['payout_date'])
+    
+    return settlements
+
+@api_router.post("/profit-settlements/calculate")
+async def calculate_yearly_settlements(year: int, username: str = Depends(verify_token)):
+    """Calculate and create yearly profit settlements for all active investors"""
+    # Get all active investors
+    active_investors = await db.investors.find({"status": "active"}, {"_id": 0}).to_list(1000)
+    
+    created_count = 0
+    year_end_date = datetime(year, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+    payout_eligible_date = year_end_date + timedelta(days=90)
+    
+    for investor in active_investors:
+        # Check if settlement already exists for this investor and year
+        existing = await db.yearly_profit_settlements.find_one({
+            "investor_id": investor['id'],
+            "settlement_year": year
+        }, {"_id": 0})
+        
+        if existing:
+            continue
+        
+        # Calculate profit for this investor for this year
+        profit = await calculate_investor_yearly_profit(investor['id'], year)
+        
+        if profit > 0:
+            settlement = YearlyProfitSettlement(
+                investor_id=investor['id'],
+                investor_name=investor['name'],
+                settlement_year=year,
+                profit_amount=profit,
+                calculation_date=datetime.now(timezone.utc),
+                payout_eligible_date=payout_eligible_date,
+                status="pending"
+            )
+            
+            doc = settlement.model_dump()
+            doc['calculation_date'] = doc['calculation_date'].isoformat()
+            doc['payout_eligible_date'] = doc['payout_eligible_date'].isoformat()
+            await db.yearly_profit_settlements.insert_one(doc)
+            
+            created_count += 1
+            
+            # Create audit log
+            await create_audit_log(
+                event_type="yearly_profit_settlement_created",
+                entity_type="profit_settlement",
+                entity_id=settlement.id,
+                entity_name=investor['name'],
+                description=f"Yearly profit settlement for {investor['name']} for year {year}. Profit: ₹{profit:,.2f}. Payout eligible: {payout_eligible_date.strftime('%Y-%m-%d')}",
+                details={
+                    "investor_id": investor['id'],
+                    "investor_name": investor['name'],
+                    "settlement_year": year,
+                    "profit_amount": profit,
+                    "payout_eligible_date": payout_eligible_date.isoformat()
+                },
+                performed_by=username
+            )
+    
+    return {
+        "message": f"Created {created_count} settlement(s) for year {year}",
+        "count": created_count
+    }
+
+@api_router.post("/profit-settlements/{settlement_id}/payout")
+async def execute_settlement_payout(settlement_id: str, username: str = Depends(verify_token)):
+    """Execute payout for an eligible settlement"""
+    # First check eligibility
+    await check_and_update_settlement_eligibility()
+    
+    settlement = await db.yearly_profit_settlements.find_one({"id": settlement_id}, {"_id": 0})
+    if not settlement:
+        raise HTTPException(status_code=404, detail="Settlement not found")
+    
+    if settlement['status'] == "paid":
+        raise HTTPException(status_code=400, detail="Settlement already paid")
+    
+    if settlement['status'] == "pending":
+        raise HTTPException(status_code=400, detail="Settlement not yet eligible for payout (waiting for 90-day delay)")
+    
+    # Execute payout
+    now = datetime.now(timezone.utc)
+    await db.yearly_profit_settlements.update_one(
+        {"id": settlement_id},
+        {"$set": {"status": "paid", "payout_date": now.isoformat()}}
+    )
+    
+    # Update investor's total returns
+    await db.investors.update_one(
+        {"id": settlement['investor_id']},
+        {"$inc": {"total_returns": settlement['profit_amount']}}
+    )
+    
+    # Update pool - return the profit amount to available funds
+    await db.pool.update_one(
+        {},
+        {"$inc": {"available_funds": settlement['profit_amount']}}
+    )
+    
+    # Audit log for payout
+    updated_pool = await db.pool.find_one({}, {"_id": 0})
+    await create_audit_log(
+        event_type="yearly_profit_settlement_paid",
+        entity_type="profit_settlement",
+        entity_id=settlement_id,
+        entity_name=settlement['investor_name'],
+        description=f"Yearly profit settlement paid to {settlement['investor_name']} for year {settlement['settlement_year']}. Amount: ₹{settlement['profit_amount']:,.2f}",
+        details={
+            "investor_id": settlement['investor_id'],
+            "investor_name": settlement['investor_name'],
+            "settlement_year": settlement['settlement_year'],
+            "profit_amount": settlement['profit_amount'],
+            "payout_date": now.isoformat(),
+            "pool_available_after": updated_pool.get("available_funds", 0) if updated_pool else 0
+        },
+        performed_by=username
+    )
+    
+    return {"message": "Payout executed successfully"}
+
+@api_router.get("/profit-settlements/investor/{investor_id}")
+async def get_investor_profit_settlements(investor_id: str, username: str = Depends(verify_token)):
+    """Get all profit settlements for a specific investor"""
+    # First check eligibility
+    await check_and_update_settlement_eligibility()
+    
+    settlements = await db.yearly_profit_settlements.find(
+        {"investor_id": investor_id}, {"_id": 0}
+    ).sort("settlement_year", -1).to_list(1000)
+    
+    for settlement in settlements:
+        if isinstance(settlement['calculation_date'], str):
+            settlement['calculation_date'] = datetime.fromisoformat(settlement['calculation_date'])
+        if isinstance(settlement['payout_eligible_date'], str):
+            settlement['payout_eligible_date'] = datetime.fromisoformat(settlement['payout_eligible_date'])
+        if settlement.get('payout_date') and isinstance(settlement['payout_date'], str):
+            settlement['payout_date'] = datetime.fromisoformat(settlement['payout_date'])
+    
+    return settlements
+
+@api_router.get("/profit-settlements/stats")
+async def get_settlement_stats(username: str = Depends(verify_token)):
+    """Get settlement statistics"""
+    # First check eligibility
+    await check_and_update_settlement_eligibility()
+    
+    total_settlements = await db.yearly_profit_settlements.count_documents({})
+    pending = await db.yearly_profit_settlements.count_documents({"status": "pending"})
+    eligible = await db.yearly_profit_settlements.count_documents({"status": "eligible"})
+    paid = await db.yearly_profit_settlements.count_documents({"status": "paid"})
+    
+    # Calculate totals
+    pending_settlements = await db.yearly_profit_settlements.find({"status": "pending"}, {"_id": 0}).to_list(1000)
+    eligible_settlements = await db.yearly_profit_settlements.find({"status": "eligible"}, {"_id": 0}).to_list(1000)
+    paid_settlements = await db.yearly_profit_settlements.find({"status": "paid"}, {"_id": 0}).to_list(1000)
+    
+    total_profit_pending = sum(s['profit_amount'] for s in pending_settlements)
+    total_profit_eligible = sum(s['profit_amount'] for s in eligible_settlements)
+    total_profit_paid = sum(s['profit_amount'] for s in paid_settlements)
+    
+    return {
+        "total_settlements": total_settlements,
+        "pending_count": pending,
+        "eligible_count": eligible,
+        "paid_count": paid,
+        "total_profit_pending": total_profit_pending,
+        "total_profit_eligible": total_profit_eligible,
+        "total_profit_paid": total_profit_paid
+    }
+
 # Audit Log endpoints
 @api_router.get("/audit-logs")
 async def get_audit_logs(
@@ -512,13 +772,18 @@ async def get_dashboard_stats(username: str = Depends(verify_token)):
     pending_settlements = len([t for t in transactions if t['settlement_status'] == 'pending'])
     total_returns_generated = sum(t['investor_share'] + t['shop_share'] for t in transactions)
     
+    # Add profit settlement stats
+    await check_and_update_settlement_eligibility()
+    profit_settlement_stats = await get_settlement_stats(username)
+    
     return {
         "pool": pool,
         "total_investors": total_investors,
         "total_sellers": total_sellers,
         "total_transactions": total_transactions,
         "pending_settlements": pending_settlements,
-        "total_returns_generated": total_returns_generated
+        "total_returns_generated": total_returns_generated,
+        "profit_settlements": profit_settlement_stats
     }
 
 @api_router.get("/reports/investor-returns")
