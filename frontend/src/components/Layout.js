@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Building2, ArrowLeftRight, FileText, LogOut, ScrollText, PieChart } from 'lucide-react';
+import { LayoutDashboard, Users, Building2, ArrowLeftRight, FileText, LogOut, ScrollText, PieChart, History } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Layout() {
@@ -9,6 +9,7 @@ export default function Layout() {
   const navigation = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
     { name: 'Investors', icon: Users, path: '/investors' },
+    { name: 'Investor History', icon: History, path: '/investors/history' },
     { name: 'Sellers', icon: Building2, path: '/sellers' },
     { name: 'Transactions', icon: ArrowLeftRight, path: '/transactions' },
     { name: 'Reports', icon: FileText, path: '/reports' },

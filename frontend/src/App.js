@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Investors from "./pages/Investors";
+import InvestorHistory from "./pages/InvestorHistory";
 import Sellers from "./pages/Sellers";
 import Transactions from "./pages/Transactions";
 import Reports from "./pages/Reports";
@@ -38,6 +39,7 @@ function App() {
           >
             <Route index element={<Dashboard />} />
             <Route path="investors" element={<Investors />} />
+            <Route path="investors/history" element={<InvestorHistory />} />
             <Route path="sellers" element={<Sellers />} />
             <Route path="transactions" element={<Transactions />} />
             <Route path="reports" element={<Reports />} />

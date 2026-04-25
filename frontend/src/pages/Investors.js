@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { toast } from 'sonner';
-import { Plus, X, UserPlus, TrendingUp } from 'lucide-react';
+import { Plus, X, UserPlus, TrendingUp, History } from 'lucide-react';
 import { format } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 export default function Investors() {
   const [investors, setInvestors] = useState([]);
@@ -72,14 +73,24 @@ export default function Investors() {
           <h1 className="text-4xl font-heading font-semibold text-primary mb-2">Investors</h1>
           <p className="text-muted-foreground">Manage your CPD pool investors</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all flex items-center gap-2"
-          data-testid="add-investor-button"
-        >
-          <Plus size={20} />
-          Add Investor
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/investors/history"
+            className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg font-medium shadow-sm hover:-translate-y-0.5 transition-all flex items-center gap-2"
+            data-testid="view-history-button"
+          >
+            <History size={18} />
+            View History
+          </Link>
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+            data-testid="add-investor-button"
+          >
+            <Plus size={20} />
+            Add Investor
+          </button>
+        </div>
       </div>
 
       <div className="bg-white shadow-sm rounded-xl border-t-4 border-t-primary/10 overflow-hidden">
