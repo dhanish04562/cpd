@@ -477,53 +477,30 @@ async def settle_transaction(settlement: SettlementUpdate, username: str = Depen
         {"$set": {"settlement_status": "settled", "settlement_date": datetime.now(timezone.utc).isoformat()}}
     )
     
-    # Update pool - money comes back plus investor share
+    # Update pool - money comes back (principal + discount)
+    # NOTE: investor_share is NOT distributed to investors here
+    # It will be distributed when profit settlements are PAID (after 90-day delay)
     amount_returned = transaction['amount_paid'] + transaction['investor_share']
     await db.pool.update_one(
         {},
         {"$inc": {"deployed_capital": -transaction['amount_paid'], "available_funds": amount_returned}}
     )
     
-    # Distribute returns to investors proportionally
-    investors = await db.investors.find({"status": "active"}, {"_id": 0}).to_list(1000)
-    total_contribution = sum(inv['contribution_amount'] for inv in investors)
-    
-    if total_contribution > 0:
-        for inv in investors:
-            proportion = inv['contribution_amount'] / total_contribution
-            investor_return = transaction['investor_share'] * proportion
-            await db.investors.update_one(
-                {"id": inv['id']},
-                {"$inc": {"total_returns": investor_return}}
-            )
-    
     # Audit log for settlement
     updated_pool = await db.pool.find_one({}, {"_id": 0})
-    distribution_details = []
-    if total_contribution > 0:
-        for inv in investors:
-            proportion = inv['contribution_amount'] / total_contribution
-            investor_return = transaction['investor_share'] * proportion
-            distribution_details.append({
-                "investor_name": inv.get('name', 'Unknown'),
-                "investor_id": inv['id'],
-                "proportion": round(proportion * 100, 2),
-                "return_amount": round(investor_return, 2)
-            })
-    
     await create_audit_log(
         event_type="transaction_settled",
         entity_type="transaction",
         entity_id=settlement.transaction_id,
         entity_name=transaction.get('seller_name', 'Unknown'),
-        description=f"Transaction with '{transaction.get('seller_name', 'Unknown')}' settled. ₹{amount_returned:,.2f} returned to pool (₹{transaction['amount_paid']:,.2f} principal + ₹{transaction['investor_share']:,.2f} investor returns).",
+        description=f"Transaction with '{transaction.get('seller_name', 'Unknown')}' settled. ₹{amount_returned:,.2f} returned to pool (₹{transaction['amount_paid']:,.2f} principal + ₹{transaction['investor_share']:,.2f} investor share). Investor shares will be distributed via yearly profit settlement after 90-day delay.",
         details={
             "seller_name": transaction.get('seller_name', 'Unknown'),
             "amount_paid": transaction['amount_paid'],
             "amount_returned": amount_returned,
             "investor_share": transaction['investor_share'],
             "shop_share": transaction['shop_share'],
-            "return_distribution": distribution_details,
+            "note": "Investor returns will be calculated and paid during yearly profit settlement cycle",
             "pool_deployed_after": updated_pool.get("deployed_capital", 0) if updated_pool else 0,
             "pool_available_after": updated_pool.get("available_funds", 0) if updated_pool else 0,
         },

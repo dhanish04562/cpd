@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../api';
 import { toast } from 'sonner';
-import { Plus, AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react';
+import { Plus, AlertCircle, CheckCircle, Clock, IndianRupee } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function ProfitSettlements() {
@@ -117,6 +117,14 @@ export default function ProfitSettlements() {
     }
   };
 
+  const getDaysUntilEligible = (eligibleDate) => {
+    const now = new Date();
+    const eligible = new Date(eligibleDate);
+    const diffTime = eligible - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -178,7 +186,7 @@ export default function ProfitSettlements() {
 
           <div className="bg-white shadow-sm rounded-xl border-l-4 border-l-purple-500 p-6">
             <div className="flex items-center gap-3 mb-2">
-              <DollarSign size={20} className="text-purple-500" />
+              <IndianRupee size={20} className="text-purple-500" />
               <h3 className="text-sm font-medium text-muted-foreground">Total</h3>
             </div>
             <p className="text-2xl font-bold text-foreground">{stats.total_settlements}</p>
@@ -239,7 +247,7 @@ export default function ProfitSettlements() {
               {filteredSettlements.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="px-6 py-12 text-center text-muted-foreground">
-                    <DollarSign size={48} className="mx-auto mb-4 text-slate-300" />
+                    <IndianRupee size={48} className="mx-auto mb-4 text-slate-300" />
                     <p>No profit settlements found. Calculate yearly settlements to get started.</p>
                   </td>
                 </tr>
@@ -307,7 +315,23 @@ export default function ProfitSettlements() {
                         </span>
                       )}
                       {settlement.status === 'pending' && (
-                        <span className="text-yellow-600 text-sm">Waiting...</span>
+                        <div className="text-yellow-600 text-sm">
+                          <p className="font-medium">
+                            {(() => {
+                              const daysLeft = getDaysUntilEligible(settlement.payout_eligible_date);
+                              if (daysLeft <= 0) {
+                                return '⏰ Check eligibility...';
+                              } else if (daysLeft === 1) {
+                                return '⏳ 1 day until eligible';
+                              } else {
+                                return `⏳ ${daysLeft} days until eligible`;
+                              }
+                            })()}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            (Payout possible from {format(new Date(settlement.payout_eligible_date), 'MMM dd, yyyy')})
+                          </p>
+                        </div>
                       )}
                     </td>
                   </tr>

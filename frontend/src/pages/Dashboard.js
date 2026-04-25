@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
-import { Wallet, TrendingUp, Users, Building2, Clock, DollarSign, AlertCircle, Bell } from 'lucide-react';
+import { Wallet, TrendingUp, Users, Building2, Clock, IndianRupee, AlertCircle, Bell } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { format, differenceInDays } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -78,7 +78,7 @@ export default function Dashboard() {
     {
       title: 'Available Funds',
       value: `₹${(stats?.pool?.available_funds || 0).toLocaleString('en-IN')}`,
-      icon: DollarSign,
+      icon: IndianRupee,
       color: 'bg-blue-500',
       testId: 'available-funds'
     },

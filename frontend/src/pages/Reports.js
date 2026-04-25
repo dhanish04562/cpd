@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { toast } from 'sonner';
-import { TrendingUp, DollarSign, PieChart as PieChartIcon } from 'lucide-react';
+import { TrendingUp, IndianRupee, PieChart as PieChartIcon } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function Reports() {
@@ -51,7 +51,7 @@ export default function Reports() {
         <div className="bg-white shadow-sm rounded-xl border-t-4 border-t-emerald-500 p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="bg-emerald-500 p-3 rounded-lg">
-              <DollarSign size={24} className="text-white" />
+              <IndianRupee size={24} className="text-white" />
             </div>
             <div>
               <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
